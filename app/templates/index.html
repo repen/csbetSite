@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block head %}
+  <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+  <link rel="stylesheet" href="/resources/demos/style.css">
+{% endblock %}
+{% block body %}
+	<div class="container" style="margin-top: 80px;">
+		<h1>List Match</h1>
+
+		{% for fixture in data['fixtures'] %}
+		
+
+			{% if fixture[3] in data['hash_objs'] %}
+			<a href="match/{{fixture[0]}}">
+				<button type="button" class="btn btn-info m-1"> {{fixture[1]}} <br> {{fixture[2]}} </button>
+			</a>
+			{% else %}
+				<button type="button" class="btn  btn-light m-1"> {{fixture[1]}} <br> {{fixture[2]}} </button>	
+			{% endif %}
+			
+
+
+		{% endfor %}
+
+	</div>
+{% endblock %}
+
+{% block script %}
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+	<script src="{{url_for('static', filename='js/main.js')}}"></script>
+	<script>
+		var container = document.querySelector(".container");
+		container.innerHTML = '<p>Date: <input type="text" id="datepicker"></p>' + container.innerHTML;
+		(function() {
+
+		    $( "#datepicker" ).datepicker({
+		        onSelect  : function(Text){
+		            // console.log(el);
+		            window.location.href = "/?date=" + Text;
+		        }
+		    });
+
+		})();
+	</script>
+{% endblock %}

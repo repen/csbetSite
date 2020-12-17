@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block head %}
+	<link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+{% endblock %}
+<!-- https://getbootstrap.com/docs/4.3/components/forms/ -->
+<!-- https://www.daterangepicker.com/ -->
+<!-- https://github.com/OmbraDiFenice/table2csv -->
+{% block body %}
+<div class="container" style="margin-top: 80px;">
+	<h1>Filter</h1>
+	<hr>
+	<form style="display: flex; flex-wrap: wrap;">
+		<div style="flex-basis: 250px;" class="form-group mb-2">
+			<label for="dateInput" class="sr-only">Date</label>
+			<input type="text" name="daterange" class="form-control" id="dateInput">
+		</div>
+		
+		<div style="flex-basis: 100px;" class="form-group mx-sm-3 mb-2">
+			<label for="last-scan" class="sr-only">Before start</label>
+			<input type="text" required class="form-control" id="last-scan" value="1" placeholder="1">
+		</div>			
+		
+		<div class="form-group mx-sm-3 mb-2">
+			<label for="sel1Team" class="sr-only">Team 1</label>
+			<select class="selectpicker" id="sel1Team" required>
+			     <option>-</option>
+			    {% for team in data["teams"] %}
+			    <option value="t1name:{{team}}">{{team}}</option>
+			    {% endfor %}
+			</select>
+		</div>		
+		
+		<div class="form-group mx-sm-3 mb-2">
+			<label for="sel2Team" class="sr-only">Team 2</label>
+			<select class="selectpicker" id="sel2Team" required>
+			    <option>-</option>
+			    {% for team in data["teams"] %}
+			    <option value="t2name:{{team}}">{{team}}</option>
+			    {% endfor %}
+			</select>
+		</div>
+		
+		<div style="flex-basis: 250px;" class="form-group mx-sm-3 mb-2">
+			<label for="nameMarketInput" class="sr-only">Name Market</label>
+			<select class="selectpicker" id="nameMarketInput" required>
+			
+			    <option>-</option>
+			    {% for name in data["name_markets"] %}
+			    	<option value="name_market:{{name}}">{{name}}</option>
+			    {% endfor %}
+			</select>
+		</div>		
+		
+		<div class="form-group mx-sm-3 mb-2">
+			<label for="Market1Input" class="sr-only">Market1</label>
+			<input type="text" class="form-control" id="Market1Input" value="0" placeholder="100">
+		</div>		
+		
+		<div class="form-group mx-sm-3 mb-2">
+			<label for="Market2Input" class="sr-only">Market2</label>
+			<input type="text" class="form-control" id="Market2Input" value="0" placeholder="100">
+		</div>		
+		
+<!-- 		<div class="form-group mx-sm-3 mb-2">
+			<label for="ResultInput" class="sr-only">Result</label>
+			<input type="text" readonly class="form-control" id="Result" placeholder="-">
+		</div> -->
+		
+		<button type="button" id="btn-send" class="btn btn-primary mb-2">Send</button>
+	</form>
+	<hr>
+	<h2>Result</h2>
+
+	<button type="button" id="btn-csv" class="btn btn-primary mb-2">CSV</button>
+
+	<table id="searchTb" class="table">
+	  <thead>
+	    <tr>
+	      <th scope="col">Дата</th>
+	      <th scope="col">Id</th>
+	      <th scope="col">Время до начала матча</th>
+	      <th scope="col">Команда 1</th>
+	      <th scope="col">Команда 2</th>
+	      <th scope="col">Рынок</th>
+	      <th scope="col">Время скана</th>
+	      <th scope="col">Объем на исход 1</th>
+	      <th scope="col">Объем на исход 2</th>
+	      <th scope="col">Результат</th>
+	    </tr>
+	  </thead>
+	  <tbody>
+	  	{% if data['params'] %}
+
+	  		{% set num_s = 0  %}
+	  		{% set name_market = data['params']['name_market'] %}
+	  		{% set t1price = data['params']['sum_t1'] %}
+	  		{% set t2price = data['params']['sum_t2'] %}
+  		{% endif %}
+	  	{% for fixture in data['result'] %}
+	  		
+	    
+		    {% for name, obj_market in fixture.markets[ num_s ].items()%}
+
+			    {% if if_in( data['params']['name_market'], name ) and
+			      if_in( data['params']['sum_t1'], obj_market.left) and 
+			      if_in( data['params']['sum_t2'], obj_market.right) %}
+				    <tr>
+				      <th>{{time_human( fixture.m_time )}}</th>
+				      <th>{{fixture.m_id}}</th>
+				      <td>{{data['params']['num_snapshot']}}</td>
+				      <td>{{fixture.team01}}</td>
+				      <td>{{fixture.team02}}</td>
+				      
+				      <td>{{ obj_market.name }}</td>
+				      
+				      <td>{{ time_human( obj_market.time_snapshot ) }}</td>
+					  <td>{{ obj_market.left   }}</td>
+					  <td>{{ obj_market.right  }}</td>
+
+					{% if if_in( "Количество раундов" , obj_market.name ) or 
+						if_in("Количество карт", obj_market.name)%}
+					  <td>{{ swap_result( obj_market.name,  fixture.markets[ num_s ], obj_market.winner ) }}</td>
+					{% else %}
+					  <td>{{ obj_market.winner }}</td>
+					{%endif%}
+				    
+				    </tr>
+				{%endif%}
+			
+			{% endfor %}
+
+	    {% endfor %}
+	  </tbody>
+	</table>
+</div>
+
+{% endblock %}
+
+{% block script %}
+	<script src="{{url_for('static', filename='js/tablefilter/tablefilter.js')}}"></script>
+	<script src="{{url_for('static', filename='js/table2csv.js')}}"></script>
+	
+	<script type="text/javascript" src="//cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+	
+	<!-- Include Date Range Picker -->
+	<script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
+
+	<script>
+		var today = new Date();
+		var dd = today.getDate();
+		var dy = today.getDate() - 1;
+
+		var mm = today.getMonth()+1; 
+		var yyyy = today.getFullYear();
+		if(dd<10) 
+		{
+		    dd='0'+dd;
+		} 
+
+		if(mm<10) 
+		{
+		    mm='0'+mm;
+		} 
+		var yesterday = yyyy+'-'+mm+'-'+ dy;
+		today = yyyy+'-'+mm+'-'+dd;
+
+
+
+		var Param = {};
+		Param['time'] = yesterday + ":" + today;
+		Param['name_market']  = "";
+		Param['t1name'] = "";
+		Param['t2name'] = "";
+		Param['sum_t1'] = "0";
+		Param['sum_t2'] = "0";
+		Param['num_snapshot']  = "1";
+	   
+		$(function() {
+
+		  $('input[name="daterange"]').daterangepicker({
+	  	    "startDate": yesterday,
+    		"endDate": today,
+		  	locale: {
+            	format: 'YYYY-MM-DD',
+        	},
+    }, function(start, end, label) {
+			console.log("A new: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+		    Param['time'] = start.format('YYYY-MM-DD') + ":" + end.format('YYYY-MM-DD');
+		    console.log("SSSSSSSSSSSSSSSSSSSSSSSSSSSSss	");
+	
+		  });
+		});
+
+		function encodeQueryData(data) {
+		   const ret = [];
+		   for (let d in data)
+		     ret.push(encodeURIComponent(d) + '=' + encodeURIComponent(data[d]));
+		   return ret.join('&');
+		}
+
+
+		var btnSend = document.getElementById('btn-send');
+		btnSend.addEventListener("click", function(){
+			var priceTeam1 = document.querySelector('#Market1Input');
+			var priceTeam2 = document.querySelector('#Market2Input');
+			var lastScan = document.querySelector('#last-scan');
+			var dateInput = document.querySelector('#dateInput');
+			Param['sum_t1'] = priceTeam1.value;
+			Param['sum_t2'] = priceTeam2.value;
+			Param['num_snapshot']  = lastScan.value;
+			Param['time']  = dateInput.value.split(/\s\-\s/g).join(":");
+
+	
+			var query = encodeQueryData(Param);
+			console.log(Param, Param['time']);
+
+			window.location.href = "/filter?" + query;
+		
+		});
+
+		$('#sel1Team, #sel2Team, #nameMarketInput', ).on('change', function(e){
+  			// console.log(this.value,);
+  			var arr = this.value.split(/:/g);
+  			var key = arr[0]; var val = arr[1];
+  			Param[key] = val;
+		});
+
+		var btnCsv = document.querySelector("#btn-csv");
+		btnCsv.addEventListener("click", function(){
+			$("#searchTb").first().table2csv();
+		});
+
+
+
+	    	// window.location.href = "/filter?date=" + start.format('YYYY-MM-DD') + ":" + end.format('YYYY-MM-DD');
+	    // var tf = new TableFilter('searchTb');
+    	// tf.init();
+	</script>
+{% endblock %}
+

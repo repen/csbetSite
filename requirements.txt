@@ -1,0 +1,16 @@
+beautifulsoup4==4.8.2
+bs4==0.0.1
+cachier==1.4.2
+Click==7.0
+Flask==1.1.1
+itsdangerous==1.1.0
+Jinja2==2.10.3
+MarkupSafe==1.1.1
+pathtools==0.1.2
+peewee==3.13.1
+portalocker==2.0.0
+profilehooks==1.11.1
+soupsieve==1.9.5
+waitress==1.4.4
+watchdog==0.10.3
+Werkzeug==0.16.0
