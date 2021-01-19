@@ -4,7 +4,7 @@ from Model import CSGame
 from objbuild import Market, Fixture
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from Globals import WORK_DIR
+from Globals import WORK_DIR, PRODUCTION_WORK
 from tools import hash_, listdir_fullpath, get_search
 import itertools, gc
 from waitress import serve
@@ -17,6 +17,8 @@ logger = logging.getLogger("__DEBUG__")
 pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100"
 
 app = Flask(__name__)
+
+OBJECT_DIR = os.path.join( WORK_DIR, "data", "objects")
 
 def timeit(f):
 
@@ -105,7 +107,7 @@ def name_markets_prepare(fixtures):
 def load_objects(*args, **kwargs):
     index = kwargs.setdefault("index", -1)
     fixtures = []
-    l_objs = listdir_fullpath(WORK_DIR + "/data/objects")
+    l_objs = listdir_fullpath( OBJECT_DIR )
     gc.disable()
     for path in l_objs:
         try:
@@ -141,7 +143,7 @@ def load_objects_cache():
 def index():
     data = {}
     data['fixtures'] = []
-    data['hash_objs'] = list( map( lambda x:x.split("/")[-1] , listdir_fullpath( WORK_DIR + "/data/objects" ) ) )
+    data['hash_objs'] = list( map( lambda x:x.split("/")[-1] , listdir_fullpath(OBJECT_DIR ) ) )
 
     
     current_time = datetime.now().timestamp()
@@ -165,8 +167,8 @@ def index():
 def match_page(m_id):
     data = {}
     # return render_template("match.html", data = data)
-    path_id = WORK_DIR + "/data/objects/" + hash_(m_id)
-    l_objs = listdir_fullpath( WORK_DIR + "/data/objects" )
+    path_id = os.path.join( OBJECT_DIR, hash_(m_id) )
+    l_objs = listdir_fullpath( OBJECT_DIR )
     if path_id in l_objs:
         try:
             with open(path_id, "rb") as f:
@@ -229,7 +231,7 @@ def before_request():
 
 if __name__ == '__main__':
 
-    if os.getenv("APP_PATH", False):
+    if PRODUCTION_WORK:
         serve(app, host='0.0.0.0', port=5000)
     else:
-        app.run(port=5010, host='0.0.0.0', debug=True)
+        app.run(port=5000, host='0.0.0.0', debug=True)

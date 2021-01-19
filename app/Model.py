@@ -1,8 +1,7 @@
 from peewee import *
-from Globals import WORK_DIR
-
-db = SqliteDatabase(WORK_DIR + "/data/database/csgo02.db")
-
+from Globals import  DATA_DIR
+import os
+db = SqliteDatabase(os.path.join( DATA_DIR, "csbet.db") )
 
 class CSGame(Model):
     m_id     = CharField()
