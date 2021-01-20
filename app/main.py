@@ -143,7 +143,7 @@ def load_objects_cache():
 def index():
     data = {}
     data['fixtures'] = []
-    data['hash_objs'] = list( map( lambda x:x.split("/")[-1] , listdir_fullpath(OBJECT_DIR ) ) )
+    data['hash_objs'] = list( map( lambda x:x.split("/")[-1] , listdir_fullpath( OBJECT_DIR ) ) )
 
     
     current_time = datetime.now().timestamp()
@@ -159,7 +159,7 @@ def index():
         m_id = fixture.m_id
         m_team = "{} vs {}".format( fixture.team1, fixture.team2 )
         m_time = datetime.fromtimestamp( fixture.m_time ).strftime("%Y.%m.%d %H:%M")
-        data['fixtures'].append( ( m_id, m_team, m_time, hash_( m_id )) )
+        data['fixtures'].append( ( m_id, m_team, m_time,  m_id ) )
 
     return render_template("index.html", data = data)
 
@@ -167,7 +167,7 @@ def index():
 def match_page(m_id):
     data = {}
     # return render_template("match.html", data = data)
-    path_id = os.path.join( OBJECT_DIR, hash_(m_id) )
+    path_id = os.path.join( OBJECT_DIR, m_id )
     l_objs = listdir_fullpath( OBJECT_DIR )
     if path_id in l_objs:
         try:
