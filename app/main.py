@@ -4,7 +4,7 @@ from Model import CSGame
 from objbuild import Market, Fixture
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-from Globals import WORK_DIR, PRODUCTION_WORK
+from Globals import WORK_DIR, PRODUCTION_WORK, DATA_DIR
 from tools import hash_, listdir_fullpath, get_search
 import itertools, gc
 from waitress import serve
@@ -18,7 +18,7 @@ pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|вы�
 
 app = Flask(__name__)
 
-OBJECT_DIR = os.path.join( WORK_DIR, "data", "objects")
+OBJECT_DIR = os.path.join( DATA_DIR, "objects")
 
 def timeit(f):
 
