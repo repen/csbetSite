@@ -1,5 +1,5 @@
 #docker build -t csbet_site:latest .
-#docker run --name csbetsite --rm -d -v csbet:/home/app/data -p 8010:5000 csbet_site:latest
+#docker run --name csbetsite --rm -d -v betscsgo:/site/data -p 8030:5000 csbet_site:latest
 
 FROM python:3.6-alpine
 
