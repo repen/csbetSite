@@ -2,7 +2,7 @@
 #docker run --name csbetsite --rm -d -v betscsgo:/site/data -p 8030:5000 csbet_site:latest
 #docker run --name csbetsite --rm -v betscsgo:/site/data -p 8030:5000 csbet_site:latest
 
-FROM python:3.6-alpine
+FROM python:3.8
 
 ENV path /site
 
