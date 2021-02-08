@@ -1,6 +1,6 @@
 #docker build -t csbet_site:latest .
-#docker run --name csbetsite --rm -d -v betscsgo:/site/data -p 8030:5000 csbet_site:latest
-#docker run --name csbetsite --rm -v betscsgo:/site/data -p 8030:5000 csbet_site:latest
+#docker run --name csbetsite -d -v betscsgo_tester:/site/data -p 8030:5000 csbet_site:latest
+#docker run --name csbetsite -v betscsgo_tester:/site/data -p 8030:5000 csbet_site:latest
 
 FROM python:3.8
 
