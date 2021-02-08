@@ -1,14 +1,12 @@
 from flask import Flask, render_template, request, g
-import os, json, re, pickle, logging, time
-from Model import CSGame
+import os, re, logging, time
+from Model import ITCSGame, Finished, RWFixture
+from datetime import datetime
+from Globals import PRODUCTION_WORK, DATA_DIR
+from tools import listdir_fullpath, get_search
 from objbuild import Market, Fixture
-from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-from Globals import WORK_DIR, PRODUCTION_WORK, DATA_DIR
-from tools import hash_, listdir_fullpath, get_search
 import itertools, gc
 from waitress import serve
-from cachier import cachier
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
@@ -107,33 +105,27 @@ def name_markets_prepare(fixtures):
 def load_objects(*args, **kwargs):
     index = kwargs.setdefault("index", -1)
     fixtures = []
-    l_objs = listdir_fullpath( OBJECT_DIR )
     gc.disable()
-    for path in l_objs:
+    finished = Finished()
+    for fixture in finished.get_fixtures():
+        fixture = RWFixture(fixture)
         try:
-            with open(path, "rb") as f:
-                fixture = pickle.load(f)
-            try:
-                # fixture._snapshots = [ fixture._snapshots[ index ] ]
-                fixture._snapshots = [ fixture._snapshots[ index ] ]
-                fixtures.append(fixture)
-            except IndexError as ie:
-                print("IndexError", ie)
-        except Exception as e:
-            print("Error", str(e))
+            fixture._snapshots = [ fixture._snapshots[ index ] ]
+            fixtures.append(fixture)
+        except IndexError as ie:
+            print("IndexError", ie)
     gc.enable()
     return fixtures
 
-@cachier(stale_after=timedelta(seconds=60*60*5))
+
 def load_objects_cache():
     fixtures = load_objects()
     data = {}
     ts = time.time()
-
     data["name_markets"] = name_markets_prepare( fixtures )
     data["name_markets"] = list( filter(lambda x: not re.search(pattern001, x), data["name_markets"] ) )
     data["teams"] = sorted( set( itertools.chain.from_iterable( [ [x.team01, x.team02] for x in fixtures] ) ) )
-    
+    data["league"] = set( x.league for x in fixtures )
     te = time.time()
     
     logger.info("Time {}".format(te-ts) )
@@ -143,17 +135,29 @@ def load_objects_cache():
 def index():
     data = {}
     data['fixtures'] = []
-    data['hash_objs'] = list( map( lambda x:x.split("/")[-1] , listdir_fullpath( OBJECT_DIR ) ) )
+
+    data['hash_objs'] = Finished().get_all_keys()
 
     
     current_time = datetime.now().timestamp()
     date = request.args.get('date', default=False)
     
+    ICSGame = ITCSGame()
+    fixtures = ICSGame.get_csgame()
+    # breakpoint()
     if date:
         date = datetime.strptime(date, "%m/%d/%Y").timestamp()
-        fixtures = CSGame.select().where( (date < CSGame.m_time) & (CSGame.m_time < date + 87000))
+        # fixtures = CSGame.select().where( (date < CSGame.m_time) & (CSGame.m_time < date + 87000))
+        fixtures = filter( 
+            lambda x: date < x.m_time and x.m_time < date + 87000, fixtures
+        )
+
     else:
-        fixtures = CSGame.select().where( CSGame.m_time > current_time + 87000 )
+        # fixtures = CSGame.select().where( CSGame.m_time > current_time + 87000 )
+        fixtures = filter(
+            lambda x: x.m_time > current_time + 87000, fixtures
+        )
+
     
     for fixture in fixtures:
         m_id = fixture.m_id
@@ -166,30 +170,25 @@ def index():
 @app.route('/match/<m_id>')
 def match_page(m_id):
     data = {}
-    # return render_template("match.html", data = data)
-    path_id = os.path.join( OBJECT_DIR, m_id )
-    l_objs = listdir_fullpath( OBJECT_DIR )
-    if path_id in l_objs:
-        try:
-            with open(path_id, "rb") as f:
-                fixture = pickle.load(f)
-            data['name_markets'] = sorted( list( fixture.name_markets ) )
-            data['team1'], data['team2'] = fixture.team01, fixture.team02
-            data["result"] = fixture.markets[0]
-            res_markets = {}
-            first = fixture.markets[0]
+    fixture = Finished().get_fixture( m_id )
 
-            for x in first:
-                res_markets[x] = first[x].winner
-            
-            data['markets'] = fixture.markets
-            data["result"] = res_markets
-            return render_template("match.html", data = data)
-        except Exception as e:
-            print("Error", str(e))
-            return "Error: " + str(e)
+    # breakpoint()
+    if fixture:
+        data['name_markets'] = sorted( list( fixture.name_markets ) )
+        data['team1'], data['team2'] = fixture.team01, fixture.team02
+        data["result"] = fixture.markets[0]
+        res_markets = {}
+        first = fixture.markets[0]
+
+        for x in first:
+            res_markets[x] = first[x].winner
+
+        data['markets'] = fixture.markets
+        data["result"] = res_markets
+        # breakpoint()
+        return render_template("match.html", data = data)
     else:
-        return "Not path_id " + m_id 
+        return "Not path_id " + m_id
 
 @app.route('/filter')
 def filter_page():
@@ -208,6 +207,7 @@ def filter_page():
         params['sum_t1'] = int( params['sum_t1'] )
         params['sum_t2'] = int( params['sum_t2'] )
         params['num_snapshot'] = int( params['num_snapshot'] )
+        # breakpoint()
         query = get_search( params, fixtures )
         # import pdb;pdb.set_trace()
 
@@ -218,6 +218,7 @@ def filter_page():
     fixtures_c = load_objects_cache()
     data["name_markets"] = fixtures_c["name_markets"]
     data["teams"] = fixtures_c["teams"]
+    data["league"] = fixtures_c["league"]
     
     return render_template("filter.html", data = data)
 

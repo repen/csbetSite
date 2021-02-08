@@ -25,6 +25,10 @@ def get_search(param, objs):
     f = filter
     # print(len(result[0].markets), "!!!!!!!")
     # result = l( f( lambda fx : len( fx.markets ) >  param['num_snapshot'], result ) )
+    # breakpoint()
+
+    if param["league"] != "-":
+        result = l( f ( lambda x : x.league == param["league"], result) )
 
     if param['time'][0] and param['time'][1]:
         result = l( f ( lambda x : x.m_time > param['time'][0] and x.m_time < param['time'][1], result) )

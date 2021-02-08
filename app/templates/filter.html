@@ -9,7 +9,7 @@
 <div class="container" style="margin-top: 80px;">
 	<h1>Filter</h1>
 	<hr>
-	<form style="display: flex; flex-wrap: wrap;">
+	<form style="display: flex; flex-wrap: wrap;" method="GET">
 		<div style="flex-basis: 250px;" class="form-group mb-2">
 			<label for="dateInput" class="sr-only">Date</label>
 			<input type="text" name="daterange" class="form-control" id="dateInput">
@@ -60,6 +60,18 @@
 			<label for="Market2Input" class="sr-only">Market2</label>
 			<input type="text" class="form-control" id="Market2Input" value="0" placeholder="100">
 		</div>		
+
+
+		<div style="flex-basis: 250px;" class="form-group mx-sm-3 mb-2">
+			<label for="league" class="sr-only">league</label>
+			<select class="selectpicker" name="league" id="league" required>
+
+				<option value="-">-</option>
+			    {% for name in data["league"] %}
+			    	<option value="league:{{name}}">{{name}}</option>
+			    {% endfor %}
+			</select>
+		</div>	
 		
 <!-- 		<div class="form-group mx-sm-3 mb-2">
 			<label for="ResultInput" class="sr-only">Result</label>
@@ -76,6 +88,7 @@
 	<table id="searchTb" class="table">
 	  <thead>
 	    <tr>
+	      <th scope="col">Лига</th>
 	      <th scope="col">Дата</th>
 	      <th scope="col">Id</th>
 	      <th scope="col">Время до начала матча</th>
@@ -105,6 +118,7 @@
 			      if_in( data['params']['sum_t1'], obj_market.left) and 
 			      if_in( data['params']['sum_t2'], obj_market.right) %}
 				    <tr>
+				      <th>{{ fixture.league }}</th>
 				      <th>{{time_human( fixture.m_time )}}</th>
 				      <th>{{fixture.m_id}}</th>
 				      <td>{{data['params']['num_snapshot']}}</td>
@@ -174,6 +188,7 @@
 		Param['sum_t1'] = "0";
 		Param['sum_t2'] = "0";
 		Param['num_snapshot']  = "1";
+		Param['league']  = "-";
 	   
 		$(function() {
 
@@ -203,6 +218,7 @@
 		btnSend.addEventListener("click", function(){
 			var priceTeam1 = document.querySelector('#Market1Input');
 			var priceTeam2 = document.querySelector('#Market2Input');
+			var league = document.querySelector('#Market2Input');
 			var lastScan = document.querySelector('#last-scan');
 			var dateInput = document.querySelector('#dateInput');
 			Param['sum_t1'] = priceTeam1.value;
@@ -218,7 +234,7 @@
 		
 		});
 
-		$('#sel1Team, #sel2Team, #nameMarketInput', ).on('change', function(e){
+		$('#sel1Team, #sel2Team, #nameMarketInput, #league', ).on('change', function(e){
   			// console.log(this.value,);
   			var arr = this.value.split(/:/g);
   			var key = arr[0]; var val = arr[1];
