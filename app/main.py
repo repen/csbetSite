@@ -143,6 +143,7 @@ def load_objects_cache():
     return data
 
 @app.route('/')
+@cache.cached(timeout=60*60*12)
 def index():
     data = {}
     data['fixtures'] = []
@@ -159,15 +160,10 @@ def index():
     if date:
         date = datetime.strptime(date, "%m/%d/%Y").timestamp()
         # fixtures = CSGame.select().where( (date < CSGame.m_time) & (CSGame.m_time < date + 87000))
-        fixtures = filter( 
-            lambda x: date < x.m_time and x.m_time < date + 87000, fixtures
-        )
-
+        fixtures = list( filter( lambda x: date < x.m_time and x.m_time < date + 87000, fixtures ) )
     else:
         # fixtures = CSGame.select().where( CSGame.m_time > current_time + 87000 )
-        fixtures = filter(
-            lambda x: x.m_time > current_time + 87000, fixtures
-        )
+        fixtures = list( filter( lambda x: x.m_time > current_time + 87000, fixtures ) )
 
     
     for fixture in fixtures:
