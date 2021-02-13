@@ -2,7 +2,6 @@ from peewee import *
 from Globals import  DATA_DIR
 import os
 from ZODB import FileStorage, DB
-from BTrees.OOBTree import OOBTree
 from persistent import Persistent
 from collections import namedtuple
 
@@ -21,8 +20,8 @@ Market = namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot
 
 def get_db():
     storage = FileStorage.FileStorage(
-        os.path.join( DATA_DIR, "mydatabase.fs"), pack_keep_old=False, read_only=True )
-    zopedb = DB(storage, large_record_size=1000000000000)
+        os.path.join( DATA_DIR, "mydatabase.fs"), read_only=True )
+    zopedb = DB(storage)
     return zopedb
 
 class RWFixture:

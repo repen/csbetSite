@@ -4,17 +4,29 @@ from Model import ITCSGame, Finished, RWFixture
 from datetime import datetime
 from Globals import PRODUCTION_WORK, DATA_DIR
 from tools import listdir_fullpath, get_search
-from objbuild import Market, Fixture
 import itertools, gc
 from waitress import serve
+from flask_caching import Cache
+
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 
+
 logger = logging.getLogger("__DEBUG__")
+
+config = {
+    "DEBUG": True,          # some Flask specific configs
+    "CACHE_TYPE": "simple", # Flask-Caching related configs
+    "CACHE_DEFAULT_TIMEOUT": 300
+}
 
 pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100"
 
 app = Flask(__name__)
+
+app.config.from_mapping(config)
+cache = Cache(app)
 
 OBJECT_DIR = os.path.join( DATA_DIR, "objects")
 
@@ -118,6 +130,7 @@ def load_objects(*args, **kwargs):
     return fixtures
 
 
+@cache.cached(timeout=60*60*5, key_prefix='load_objects_cache')
 def load_objects_cache():
     fixtures = load_objects()
     data = {}
