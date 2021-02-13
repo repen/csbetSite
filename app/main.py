@@ -143,7 +143,6 @@ def load_objects_cache():
     return data
 
 @app.route('/')
-@cache.cached(timeout=60*60*12)
 def index():
     data = {}
     data['fixtures'] = []
