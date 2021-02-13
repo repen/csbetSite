@@ -117,7 +117,6 @@ def name_markets_prepare(fixtures):
 def load_objects(*args, **kwargs):
     index = kwargs.setdefault("index", -1)
     fixtures = []
-    gc.disable()
     finished = Finished()
     for fixture in finished.get_fixtures():
         fixture = RWFixture(fixture)
@@ -126,7 +125,6 @@ def load_objects(*args, **kwargs):
             fixtures.append(fixture)
         except IndexError as ie:
             print("IndexError", ie)
-    gc.enable()
     return fixtures
 
 
