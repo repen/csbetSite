@@ -76,6 +76,7 @@ class CSGame(Model):
 class ITCSGame(Persistent):
     def __init__(self):
         zopedb = get_db()
+        self.zopedb = zopedb
 
         connection = zopedb.open()
         root = connection.root()
@@ -95,6 +96,7 @@ class Finished(Persistent):
 
     def __init__(self):
         zopedb = get_db()
+        self.zopedb = zopedb
         connection = zopedb.open()
         root = connection.root()
         self.tree = root["finished"].tree
@@ -104,7 +106,8 @@ class Finished(Persistent):
             yield fixture
 
     def get_all_keys(self):
-        return list( self.tree.keys() )
+        data = list( self.tree.keys() )
+        return data
 
     def get_fixture(self, fixture_id):
         fixture = self.tree.get(fixture_id)

@@ -125,6 +125,7 @@ def load_objects(*args, **kwargs):
             fixtures.append(fixture)
         except IndexError as ie:
             print("IndexError", ie)
+    finished.zopedb.close()
     return fixtures
 
 
@@ -155,6 +156,7 @@ def index():
     
     ICSGame = ITCSGame()
     fixtures = ICSGame.get_csgame()
+    ICSGame.zopedb.close()
     # breakpoint()
     if date:
         date = datetime.strptime(date, "%m/%d/%Y").timestamp()
@@ -170,7 +172,6 @@ def index():
         m_team = "{} vs {}".format( fixture.team1, fixture.team2 )
         m_time = datetime.fromtimestamp( fixture.m_time ).strftime("%Y.%m.%d %H:%M")
         data['fixtures'].append( ( m_id, m_team, m_time,  m_id ) )
-
     return render_template("index.html", data = data)
 
 @app.route('/match/<m_id>')
