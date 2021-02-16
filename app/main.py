@@ -125,6 +125,7 @@ def load_objects(*args, **kwargs):
             fixtures.append(fixture)
         except IndexError as ie:
             print("IndexError", ie)
+    finished.zopedb.cacheMinimize()
     finished.zopedb.close()
     return fixtures
 
@@ -147,8 +148,10 @@ def load_objects_cache():
 def index():
     data = {}
     data['fixtures'] = []
-
-    data['hash_objs'] = Finished().get_all_keys()
+    Fn = Finished()
+    data['hash_objs'] = Fn.get_all_keys()
+    Fn.zopedb.cacheMinimize()
+    Fn.zopedb.close()
 
     
     current_time = datetime.now().timestamp()
@@ -156,6 +159,7 @@ def index():
     
     ICSGame = ITCSGame()
     fixtures = ICSGame.get_csgame()
+    ICSGame.zopedb.cacheMinimize()
     ICSGame.zopedb.close()
     # breakpoint()
     if date:
