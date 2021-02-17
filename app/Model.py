@@ -11,8 +11,11 @@ db = SqliteDatabase(os.path.join( DATA_DIR, "csbet.db") )
 
 icsgame   = namedtuple("icsgame",   ["m_id", "m_time", "team1", "team2"])
 fn_fixture = namedtuple("fn_fixture",   ["m_id", "m_time", "team01", "team02", "name_markets", "markets"])
-Market = namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot' ])
+# Market = namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot' ])
+class Market(namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot',  "koefleft", "koefright"])):
 
+    def __new__(cls, *args, koefleft=None, koefright=None):
+        return super().__new__( cls, *args, koefleft=koefleft, koefright=koefright)
 
 # storage = FileStorage.FileStorage(
 #     os.path.join( DATA_DIR, "mydatabase.fs"), pack_keep_old=False, read_only=True )
