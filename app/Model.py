@@ -14,8 +14,18 @@ fn_fixture = namedtuple("fn_fixture",   ["m_id", "m_time", "team01", "team02", "
 # Market = namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot' ])
 class Market(namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot',  "koefleft", "koefright"])):
 
-    def __new__(cls, *args, koefleft=None, koefright=None):
-        return super().__new__( cls, *args, koefleft=koefleft, koefright=koefright)
+    def __new__(cls, **kwargs):
+        # name = kwargs.get("name")
+        # left = kwargs.get("left")
+        # right  = kwargs.get("right")
+        # winner = kwargs.get("winner")
+        # time_snapshot = kwargs.get("time_snapshot")
+
+        koefleft = kwargs.setdefault("koefleft", None)
+        koefright = kwargs.setdefault("koefright", None)
+        kwargs.update( {"koefleft":koefleft, "koefright":koefright} )
+
+        return super().__new__( cls, **kwargs)
 
 # storage = FileStorage.FileStorage(
 #     os.path.join( DATA_DIR, "mydatabase.fs"), pack_keep_old=False, read_only=True )
