@@ -1,141 +1,64 @@
-from peewee import *
-from Globals import  DATA_DIR
+from peewee import Model, IntegerField, IntegrityError, \
+    CharField, SqliteDatabase, MySQLDatabase
+from Globals import BASE_DIR
 import os
-from ZODB import FileStorage, DB
-from persistent import Persistent
-from collections import namedtuple
 
+IntegrityError = IntegrityError
 
+# db = SqliteDatabase(
+#     os.path.join( BASE_DIR,  "data", "sqlite.db"), check_same_thread=False
+# )
 
-db = SqliteDatabase(os.path.join( DATA_DIR, "csbet.db") )
+db = MySQLDatabase("cs", user="pog",
+                        password="qwerty123", port=3306, host="127.0.0.1" )
 
-icsgame   = namedtuple("icsgame",   ["m_id", "m_time", "team1", "team2"])
-fn_fixture = namedtuple("fn_fixture",   ["m_id", "m_time", "team01", "team02", "name_markets", "markets"])
-# Market = namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot' ])
-class Market(namedtuple('Market', ['name', 'left', 'right', 'winner', 'time_snapshot',  "koefleft", "koefright"])):
+class Fixture(Model):
+    m_id = IntegerField(unique=True)
+    m_timestamp = IntegerField()
+    m_team1  = CharField()
+    m_team2  = CharField()
+    m_league = CharField()
 
-    def __new__(cls, **kwargs):
-        # name = kwargs.get("name")
-        # left = kwargs.get("left")
-        # right  = kwargs.get("right")
-        # winner = kwargs.get("winner")
-        # time_snapshot = kwargs.get("time_snapshot")
+    class Meta:
+        database = db
 
-        koefleft = kwargs.setdefault("koefleft", None)
-        koefright = kwargs.setdefault("koefright", None)
-        kwargs.update( {"koefleft":koefleft, "koefright":koefright} )
+class Market(Model):
+    m_id = IntegerField()
+    c_id = IntegerField()
+    m_snapshot_time= IntegerField()
+    left_value = IntegerField()
+    name = CharField()
+    right_value = IntegerField()
 
-        return super().__new__( cls, **kwargs)
+    class Meta:
+        database = db
 
-# storage = FileStorage.FileStorage(
-#     os.path.join( DATA_DIR, "mydatabase.fs"), pack_keep_old=False, read_only=True )
-# zopedb = DB(storage, large_record_size=1000000000000)
-
-def get_db():
-    storage = FileStorage.FileStorage(
-        os.path.join( DATA_DIR, "mydatabase.fs"), read_only=True )
-    zopedb = DB(storage)
-    return zopedb
-
-class RWFixture:
-    def __init__(self, data):
-        for key, value in data.items():
-            if key == "m_time":
-                setattr(self, key, int(value))
-            elif key == "_snapshots":
-                nd = [ { k:Market(**v) for k, v in markets.items() } for markets in value]
-                setattr(self, key, nd)
-            else:
-                setattr(self, key, value)
-
-
-    @property
-    def markets(self):
-        return self._snapshots
-
-    @markets.setter
-    def markets(self, elements):
-        self._snapshots.append( elements )
-
-    @markets.getter
-    def markets(self):
-        return self._snapshots
-
-    @property
-    def name_markets(self):
-        return self._name_markets
-
-    @name_markets.setter
-    def name_markets(self, names):
-        for name in names:
-            self._name_markets.add( name )
-
-    @name_markets.getter
-    def name_markets(self,):
-        return self._name_markets
-
-
-
-class CSGame(Model):
-    m_id     = CharField()
-    m_time   = IntegerField()
-    team1    = CharField()
-    team2    = CharField()
+class Result(Model):
+    c_id = IntegerField(unique=True)
+    winner = CharField()
+    score  = CharField()
 
     class Meta:
         database = db
 
 
-class ITCSGame(Persistent):
-    def __init__(self):
-        zopedb = get_db()
-        self.zopedb = zopedb
+class Koef(Model):
+    m_id = IntegerField()
+    m_snapshot_time= IntegerField()
 
-        connection = zopedb.open()
-        root = connection.root()
-        self.data = root["csgame"].csgame
-        # breakpoint()
-        # self.csgame = {}
+    left_value  = CharField()
+    market_name = CharField(default="Main")
+    right_value = CharField()
 
-    def get_csgame(self):
-        data = []
-        for cs in self.data.values():
-            cs["m_time"] = int(cs["m_time"])
-            data.append(cs)
+    left_percent = CharField()
+    right_percent = CharField()
 
-        return [ icsgame(**val) for val in data ]
+    class Meta:
+        database = db
 
-class Finished(Persistent):
+Fixture.create_table()
+Market.create_table()
+Result.create_table()
+Koef.create_table()
 
-    def __init__(self):
-        zopedb = get_db()
-        self.zopedb = zopedb
-        connection = zopedb.open()
-        root = connection.root()
-        self.tree = root["finished"].tree
-
-    def get_fixtures(self):
-        for key, fixture in self.tree.items():
-            yield fixture
-
-    def get_all_keys(self):
-        data = list( self.tree.keys() )
-        return data
-
-    def get_fixture(self, fixture_id):
-        fixture = self.tree.get(fixture_id)
-        # breakpoint()
-        return RWFixture(fixture) if fixture else False
-
-
-
-
-
-# ICSGame = ITCSGame()
-# finished = Finished()
 # breakpoint()
-
-
-
-if __name__ == '__main__':
-    pass

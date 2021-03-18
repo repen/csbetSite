@@ -1,12 +1,14 @@
 from flask import Flask, render_template, request, g
 import os, re, logging, time
-from Model import ITCSGame, Finished, RWFixture
+# from Model import ITCSGame, Finished, RWFixture, Fixture
+from Model import Fixture, Market, Result, Koef, db
 from datetime import datetime
 from Globals import PRODUCTION_WORK, DATA_DIR
-from tools import listdir_fullpath, get_search
-import itertools, gc
+from tools import get_search, divider
+import itertools
 from waitress import serve
 from flask_caching import Cache
+from Interface import IFixture, IMarket
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -113,125 +115,142 @@ def name_markets_prepare(fixtures):
     
     return name_markets
 
-@timeit
-def load_objects(*args, **kwargs):
-    index = kwargs.setdefault("index", -1)
-    fixtures = []
-    finished = Finished()
-    for fixture in finished.get_fixtures():
-        fixture = RWFixture(fixture)
-        try:
-            fixture._snapshots = [ fixture._snapshots[ index ] ]
-            fixtures.append(fixture)
-        except IndexError as ie:
-            print("IndexError", ie)
-    finished.zopedb.cacheMinimize()
-    finished.zopedb.close()
-    return fixtures
+# @timeit
+# def load_objects(*args, **kwargs):
+#     index = kwargs.setdefault("index", -1)
+#     fixtures = []
+#     finished = Finished()
+#     for fixture in finished.get_fixtures():
+#         fixture = RWFixture(fixture)
+#         try:
+#             fixture._snapshots = [ fixture._snapshots[ index ] ]
+#             fixtures.append(fixture)
+#         except IndexError as ie:
+#             print("IndexError", ie)
+#     finished.zopedb.cacheMinimize()
+#     finished.zopedb.close()
+#     return fixtures
 
 
-@cache.cached(timeout=60*60*5, key_prefix='load_objects_cache')
-def load_objects_cache():
-    fixtures = load_objects()
-    data = {}
-    ts = time.time()
-    data["name_markets"] = name_markets_prepare( fixtures )
-    data["name_markets"] = list( filter(lambda x: not re.search(pattern001, x), data["name_markets"] ) )
-    data["teams"] = sorted( set( itertools.chain.from_iterable( [ [x.team01, x.team02] for x in fixtures] ) ) )
-    data["league"] = set( x.league for x in fixtures )
-    te = time.time()
-    
-    logger.info("Time {}".format(te-ts) )
-    return data
+# @cache.cached(timeout=60*60*5, key_prefix='load_objects_cache')
+# def load_objects_cache():
+#     fixtures = load_objects()
+#     data = {}
+#     ts = time.time()
+#     data["name_markets"] = name_markets_prepare( fixtures )
+#     data["name_markets"] = list( filter(lambda x: not re.search(pattern001, x), data["name_markets"] ) )
+#     data["teams"] = sorted( set( itertools.chain.from_iterable( [ [x.team01, x.team02] for x in fixtures] ) ) )
+#     data["league"] = set( x.league for x in fixtures )
+#     te = time.time()
+#
+#     logger.info("Time {}".format(te-ts) )
+#     return data
 
 @app.route('/')
 def index():
     data = {}
     data['fixtures'] = []
-    Fn = Finished()
-    data['hash_objs'] = Fn.get_all_keys()
-    Fn.zopedb.cacheMinimize()
-    Fn.zopedb.close()
 
-    
-    current_time = datetime.now().timestamp()
-    date = request.args.get('date', default=False)
-    
-    ICSGame = ITCSGame()
-    fixtures = ICSGame.get_csgame()
-    ICSGame.zopedb.cacheMinimize()
-    ICSGame.zopedb.close()
+
     # breakpoint()
+    date = request.args.get('date', default=False)
+
     if date:
-        date = datetime.strptime(date, "%m/%d/%Y").timestamp()
-        # fixtures = CSGame.select().where( (date < CSGame.m_time) & (CSGame.m_time < date + 87000))
-        fixtures = list( filter( lambda x: date < x.m_time and x.m_time < date + 87000, fixtures ) )
+        start_day = datetime.strptime(date, "%m/%d/%Y").replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        query = Fixture.select().where(
+            (Fixture.m_timestamp > start_day) & (Fixture.m_timestamp < start_day + 60*60*24 )
+        ).order_by(Fixture.m_timestamp)
     else:
-        # fixtures = CSGame.select().where( CSGame.m_time > current_time + 87000 )
-        fixtures = list( filter( lambda x: x.m_time > current_time + 87000, fixtures ) )
+        current_time = datetime.now()
+        start_day = current_time.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
+        query = Fixture.select().where(Fixture.m_timestamp > start_day).order_by(Fixture.m_timestamp)
 
     
-    for fixture in fixtures:
+    for fixture in query.namedtuples():
+        finished = bool(Result.select().where(Result.c_id == fixture.m_id))
         m_id = fixture.m_id
-        m_team = "{} vs {}".format( fixture.team1, fixture.team2 )
-        m_time = datetime.fromtimestamp( fixture.m_time ).strftime("%Y.%m.%d %H:%M")
-        data['fixtures'].append( ( m_id, m_team, m_time,  m_id ) )
+        m_team = "{} vs {}".format( fixture.m_team1, fixture.m_team2 )
+        m_time = datetime.fromtimestamp( fixture.m_timestamp ).strftime("%Y.%m.%d %H:%M")
+        data['fixtures'].append( ( m_id, m_team, m_time, finished ) )
+
     return render_template("index.html", data = data)
 
 @app.route('/match/<m_id>')
 def match_page(m_id):
-    data = {}
-    fixture = Finished().get_fixture( m_id )
+    int( m_id )
+    fixture = {}
+
+    query0 = Fixture.select().where(Fixture.m_id == m_id)
+    if query0:
+        dfixture = query0.namedtuples()[0]._asdict()
+        dfixture.pop("id")
+        fixture = IFixture(**dfixture).__dict__
+
+    query = db.execute_sql(
+        f"SELECT * FROM market WHERE m_id = {m_id} AND m_snapshot_time IN \
+        ( SELECT DISTINCT m_snapshot_time FROM market WHERE m_id = {m_id} \
+            AND m_snapshot_time < (SELECT m_timestamp FROM fixture WHERE m_id = {m_id}) )"
+    )
+
+    snapshot_dict = {}
+    
+    for row in query.fetchall():
+        market = IMarket( *row[1:] )
+        if market.m_snapshot_time not in snapshot_dict:
+            snapshot_dict[market.m_snapshot_time] = []
+        snapshot_dict[market.m_snapshot_time].append( market )
+
+    snapshot_dict = [v for k, v in snapshot_dict.items()]
+
+    winner = []
+    if snapshot_dict:
+
+        for market in snapshot_dict[-1]:
+            query = Result.select().where( Result.c_id == market.c_id )
+            data = query.namedtuples()[0]._asdict()
+            data["name"] = market.name
+            winner.append( data )
 
     # breakpoint()
-    if fixture:
-        data['name_markets'] = sorted( list( fixture.name_markets ) )
-        data['team1'], data['team2'] = fixture.team01, fixture.team02
-        data["result"] = fixture.markets[0]
-        res_markets = {}
-        first = fixture.markets[0]
+    return render_template("match.html", data = {
+        "snapshots" : divider( snapshot_dict ),
+        "winner" : winner,
+        "fixture" : fixture
+    })
 
-        for x in first:
-            res_markets[x] = first[x].winner
-
-        data['markets'] = fixture.markets
-        data["result"] = res_markets
-        # breakpoint()
-        return render_template("match.html", data = data)
-    else:
-        return "Not path_id " + m_id
 
 @app.route('/filter')
 def filter_page():
-    data = {}
-    data['result'] = []
-    params = request.args.to_dict()
-    fixtures = []
+    pass
+    # data = {}
+    # data['result'] = []
+    # params = request.args.to_dict()
+    # fixtures = []
 
 
-    if params:
-        index = params['num_snapshot']
-        # import pdb;pdb.set_trace()
-        fixtures = load_objects(index= (int( index ) + 1) * -1 )
-
-        params['time'] = convert_date( params['time'] )
-        params['sum_t1'] = int( params['sum_t1'] )
-        params['sum_t2'] = int( params['sum_t2'] )
-        params['num_snapshot'] = int( params['num_snapshot'] )
-        # breakpoint()
-        query = get_search( params, fixtures )
-        # import pdb;pdb.set_trace()
-
-
-        data['result'] = query
-        data['params'] = params
-    
-    fixtures_c = load_objects_cache()
-    data["name_markets"] = fixtures_c["name_markets"]
-    data["teams"] = fixtures_c["teams"]
-    data["league"] = fixtures_c["league"]
-    
-    return render_template("filter.html", data = data)
+    # if params:
+    #     index = params['num_snapshot']
+    #     # import pdb;pdb.set_trace()
+    #     fixtures = load_objects(index= (int( index ) + 1) * -1 )
+    #
+    #     params['time'] = convert_date( params['time'] )
+    #     params['sum_t1'] = int( params['sum_t1'] )
+    #     params['sum_t2'] = int( params['sum_t2'] )
+    #     params['num_snapshot'] = int( params['num_snapshot'] )
+    #     # breakpoint()
+    #     query = get_search( params, fixtures )
+    #     # import pdb;pdb.set_trace()
+    #
+    #
+    #     data['result'] = query
+    #     data['params'] = params
+    #
+    # fixtures_c = load_objects_cache()
+    # data["name_markets"] = fixtures_c["name_markets"]
+    # data["teams"] = fixtures_c["teams"]
+    # data["league"] = fixtures_c["league"]
+    #
+    # return render_template("filter.html", data = data)
 
 
 @app.before_request
@@ -242,7 +261,6 @@ def before_request():
 
 
 if __name__ == '__main__':
-
     if PRODUCTION_WORK:
         serve(app, host='0.0.0.0', port=5000)
     else:

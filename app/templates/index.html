@@ -11,7 +11,7 @@
 		{% for fixture in data['fixtures'] %}
 		
 
-			{% if fixture[3] in data['hash_objs'] %}
+			{% if fixture[3] %}
 			<a href="match/{{fixture[0]}}">
 				<button type="button" class="btn btn-info m-1"> {{fixture[1]}} <br> {{fixture[2]}} </button>
 			</a>
