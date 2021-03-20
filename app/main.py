@@ -115,36 +115,6 @@ def name_markets_prepare(fixtures):
     
     return name_markets
 
-# @timeit
-# def load_objects(*args, **kwargs):
-#     index = kwargs.setdefault("index", -1)
-#     fixtures = []
-#     finished = Finished()
-#     for fixture in finished.get_fixtures():
-#         fixture = RWFixture(fixture)
-#         try:
-#             fixture._snapshots = [ fixture._snapshots[ index ] ]
-#             fixtures.append(fixture)
-#         except IndexError as ie:
-#             print("IndexError", ie)
-#     finished.zopedb.cacheMinimize()
-#     finished.zopedb.close()
-#     return fixtures
-
-
-# @cache.cached(timeout=60*60*5, key_prefix='load_objects_cache')
-# def load_objects_cache():
-#     fixtures = load_objects()
-#     data = {}
-#     ts = time.time()
-#     data["name_markets"] = name_markets_prepare( fixtures )
-#     data["name_markets"] = list( filter(lambda x: not re.search(pattern001, x), data["name_markets"] ) )
-#     data["teams"] = sorted( set( itertools.chain.from_iterable( [ [x.team01, x.team02] for x in fixtures] ) ) )
-#     data["league"] = set( x.league for x in fixtures )
-#     te = time.time()
-#
-#     logger.info("Time {}".format(te-ts) )
-#     return data
 
 @app.route('/')
 def index():
@@ -186,24 +156,6 @@ def match_page(m_id):
         dfixture.pop("id")
         fixture = IFixture(**dfixture).__dict__
 
-    # last_timestamp = db.execute_sql(f"SELECT max(m_snapshot_time) FROM market WHERE m_id = {m_id}")
-    # last_timestamp = last_timestamp.fetchone()
-
-    # query = db.execute_sql(
-    #     f"SELECT * FROM market WHERE m_id = {m_id} AND m_snapshot_time IN \
-    #     ( SELECT DISTINCT m_snapshot_time FROM market WHERE m_id = {m_id} \
-    #         AND m_snapshot_time < (SELECT m_timestamp FROM fixture WHERE m_id = {m_id}) \
-    #         OR m_snapshot_time = {last_timestamp[0]} \
-    #     )"
-    # )
-
-    # query = db.execute_sql(
-    #     f"SELECT * FROM market WHERE m_id = {m_id} AND m_snapshot_time IN \
-    #     ( SELECT DISTINCT m_snapshot_time FROM market WHERE m_id = {m_id} \
-    #         AND m_snapshot_time < (SELECT m_timestamp FROM fixture WHERE m_id = {m_id}) \
-    #         OR  m_snapshot_time=(SELECT max(m_snapshot_time) FROM market WHERE m_id = {m_id}) \
-    #     )"
-    # )    
     
     query = db.execute_sql(
         f"SELECT * FROM market WHERE m_id = {m_id} AND m_snapshot_time IN \
