@@ -102,46 +102,26 @@
 	    </tr>
 	  </thead>
 	  <tbody>
-	  	{% if data['params'] %}
 
-	  		{% set num_s = 0  %}
-	  		{% set name_market = data['params']['name_market'] %}
-	  		{% set t1price = data['params']['sum_t1'] %}
-	  		{% set t2price = data['params']['sum_t2'] %}
-  		{% endif %}
 	  	{% for fixture in data['result'] %}
-	  		
+
 	    
-		    {% for name, obj_market in fixture.markets[ num_s ].items()%}
+			    {% for Market in fixture.markets %}
+			    <tr>
 
-			    {% if if_in( data['params']['name_market'], name ) and
-			      if_in( data['params']['sum_t1'], obj_market.left) and 
-			      if_in( data['params']['sum_t2'], obj_market.right) %}
-				    <tr>
-				      <th>{{ fixture.league }}</th>
-				      <th>{{time_human( fixture.m_time )}}</th>
-				      <th>{{fixture.m_id}}</th>
-				      <td>{{data['params']['num_snapshot']}}</td>
-				      <td>{{fixture.team01}}</td>
-				      <td>{{fixture.team02}}</td>
-				      
-				      <td>{{ obj_market.name }}</td>
-				      
-				      <td>{{ time_human( obj_market.time_snapshot ) }}</td>
-					  <td>{{ obj_market.left   }}</td>
-					  <td>{{ obj_market.right  }}</td>
-
-					{% if if_in( "Количество раундов" , obj_market.name ) or 
-						if_in("Количество карт", obj_market.name)%}
-					  <td>{{ swap_result( obj_market.name,  fixture.markets[ num_s ], obj_market.winner ) }}</td>
-					{% else %}
-					  <td>{{ obj_market.winner }}</td>
-					{%endif%}
-				    
-				    </tr>
-				{%endif%}
-			
-			{% endfor %}
+			    	<td>{{fixture.m_league}}</td>
+			    	<td>{{time_human( fixture.m_timestamp ) }}</td>
+			    	<td>{{fixture.m_id}}</td>
+			    	<td>{{ data['params']['num_snapshot'] }}</td>
+			    	<td>{{fixture.m_team1}}</td>
+			    	<td>{{fixture.m_team2}}</td>
+			    	<td>{{ Market.name }}</td>
+			    	<td>{{ time_human( Market.m_snapshot_time ) }}</td>
+			    	<td>{{ Market.left_value }}</td>
+			    	<td>{{ Market.right_value }}</td>
+			    	<td>{{ Market.score if Market.score else fixture.m_team1 if Market.winner == 'left' else fixture.m_team2 }}</td>
+				</tr>
+				{% endfor %}
 
 	    {% endfor %}
 	  </tbody>

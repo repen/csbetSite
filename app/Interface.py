@@ -17,12 +17,26 @@ class IMarket:
     name:str
     right_value:int
 
-# @dataclass
-# class IWinner:
-#     m_id:int
-#     c_id:int
-#     m_snapshot_time:int
-#     left_value:int
-#     name:str
-#     right_value:int
+@dataclass
+class IResult:
+    c_id:int
+    winner:str
+    score:str
+
+@dataclass
+class IMarketResult:
+    m_id:int
+    c_id:int
+    m_snapshot_time:int
+    left_value:int
+    name:str
+    right_value:int
+    winner:str
+    score:str
+
+
+
+# (124180, 272817, 272817, 1613527127, 76188, 'Main', 35014, | 368, 272817, 'right', '0 : 2')
+
+
 
