@@ -2,6 +2,7 @@ from peewee import Model, IntegerField, IntegrityError, \
     CharField, SqliteDatabase, MySQLDatabase
 from Globals import BASE_DIR
 import os
+from Globals import HOST
 
 IntegrityError = IntegrityError
 
@@ -10,7 +11,7 @@ IntegrityError = IntegrityError
 # )
 
 db = MySQLDatabase("cs", user="pog",
-                        password="qwerty123", port=3306, host="127.0.0.1" )
+                        password="qwerty123", port=3306, host=HOST )
 
 class Fixture(Model):
     m_id = IntegerField(unique=True)
