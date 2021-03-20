@@ -224,7 +224,7 @@ def match_page(m_id):
     snapshot_dict = [v for k, v in snapshot_dict.items()]
 
     winner = []
-    if snapshot_dict:
+    if snapshot_dict and Result.select().where(Result.c_id == m_id):
 
         for market in snapshot_dict[-1]:
             query = Result.select().where( Result.c_id == market.c_id )
@@ -232,7 +232,6 @@ def match_page(m_id):
             data["name"] = market.name
             winner.append( data )
 
-    # breakpoint()
     return render_template("match.html", data = {
         "snapshots" : divider( snapshot_dict ),
         "winner" : winner,
@@ -350,7 +349,6 @@ def before_request():
 
 
 if __name__ == '__main__':
-    PRODUCTION_WORK = True
     if PRODUCTION_WORK:
         serve(app, host='0.0.0.0', port=5000)
     else:
