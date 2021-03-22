@@ -141,6 +141,7 @@ def index():
         m_time = datetime.fromtimestamp( fixture.m_timestamp ).strftime("%Y.%m.%d %H:%M")
         data['fixtures'].append( ( m_id, m_team, m_time, finished ) )
 
+    db.close()
     return render_template("index.html", data = data)
 
 @app.route('/match/<m_id>')
@@ -162,7 +163,6 @@ def match_page(m_id):
         )"
     )
 
-
     snapshot_dict = {}
     
     for row in query.fetchall():
@@ -182,6 +182,7 @@ def match_page(m_id):
             data["name"] = market.name
             winner.append( data )
 
+    db.close()
     return render_template("match.html", data = {
         "snapshots" : divider( snapshot_dict ),
         "winner" : winner,
@@ -287,7 +288,7 @@ def filter_page():
 
         data['result'] = query
         data['params'] = params
-
+    db.close()
     return render_template("filter.html", data = data)
 
 
@@ -299,7 +300,4 @@ def before_request():
 
 
 if __name__ == '__main__':
-    if PRODUCTION_WORK:
-        serve(app, host='0.0.0.0', port=5000)
-    else:
-        app.run(port=5000, host='0.0.0.0', debug=True)
+    pass
