@@ -60,6 +60,34 @@ def get_search(param, objs):
             for res in result:
                 res.markets = l(f( lambda market: market.right_value >= param["sum_t2"], res.markets ))
 
+
+    # =============== deleted defective fixtures
+    index_temp = []
+    for e, res in enumerate( result ):
+        for ee, market in enumerate( res.markets ):
+            if market.name == "Main":
+                if not re.search(r"^\d+\s\:\s\d+$", market.score):
+                    index_temp.append( (e, ee) )
+                    break
+
+    new_res = []
+    it = 0
+    for e, res in enumerate( result ):
+
+        if it < len(index_temp):
+            if index_temp[it][0] == e and index_temp[it][1] == 0:
+                it+=1
+                continue
+            
+            if index_temp[it][0] == e and index_temp[it][1] > 0:
+                res.markets.pop( index_temp[it][1] )
+                it+=1
+       
+        new_res.append(res)
+
+    result = new_res
+    # =============== deleted defective fixtures
+
     return result
 
 
