@@ -21,7 +21,7 @@ config = {
     "CACHE_DEFAULT_TIMEOUT": 300
 }
 
-pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100"
+pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100|sh1ro|cadiaN"
 
 app = Flask(__name__)
 
