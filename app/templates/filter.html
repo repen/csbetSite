@@ -119,7 +119,11 @@
 			    	<td>{{ time_human( Market.m_snapshot_time ) }}</td>
 			    	<td>{{ Market.left_value }}</td>
 			    	<td>{{ Market.right_value }}</td>
-			    	<td>{{ Market.score if Market.score else fixture.m_team1 if Market.winner == 'left' else fixture.m_team2 }}</td>
+					{% if "Победа на карте" in Market.name %}
+						<td>{{ Market.score }}</td>
+					{% else %}
+						<td>{{ Market.score if Market.score else fixture.m_team1 if Market.winner == 'left' else fixture.m_team2 }}</td>
+					{% endif %}
 				</tr>
 				{% endfor %}
 

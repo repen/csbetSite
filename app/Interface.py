@@ -1,12 +1,7 @@
 from dataclasses import dataclass, field
+from typing import List
 
-@dataclass
-class IFixture:
-    m_id:int
-    m_timestamp:int
-    m_team1:str
-    m_team2:str
-    m_league:str
+
 
 @dataclass
 class IMarket:
@@ -16,6 +11,16 @@ class IMarket:
     left_value:int
     name:str
     right_value:int
+
+
+@dataclass
+class IFixture:
+    m_id:int
+    m_timestamp:int
+    m_team1:str
+    m_team2:str
+    m_league:str
+    markets: List[IMarket]
 
 @dataclass
 class IResult:

@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, g
 import os, re, logging, time
+from typing import List
 from Model import Fixture, Market, Result, Koef, db
 from datetime import datetime
 from Globals import PRODUCTION_WORK, DATA_DIR
@@ -21,7 +22,7 @@ config = {
     "CACHE_DEFAULT_TIMEOUT": 300
 }
 
-pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100|sh1ro|cadiaN"
+pattern001 = r"выигра\w+ \d+ раун\w+|ножом|убийство|выигра\w+ две|три карт\w|ACE|pro100|sh1ro|cadiaN|s1mple"
 
 app = Flask(__name__)
 
@@ -247,8 +248,7 @@ def filter_page():
 
         fixtures = []
         for row in query.fetchall():
-            fixtures.append( IFixture(*row[1:]) )
-
+            fixtures.append( IFixture(*row[1:], markets=[]) )
 
         index = int(params['num_snapshot'])
 
@@ -268,7 +268,6 @@ def filter_page():
                     ( SELECT m_snapshot_time FROM market WHERE m_id = {fixture.m_id} \
                     ORDER BY id DESC LIMIT 1 )"
                 )
-            fixture.markets = []
 
             if not query.rowcount:
                 continue
@@ -280,7 +279,6 @@ def filter_page():
                 fixture.markets.append( mres )
 
         fixtures = list( filter( lambda x : x.markets, fixtures) )
-
         params['sum_t1'] = int( params['sum_t1'] )
         params['sum_t2'] = int( params['sum_t2'] )
         params['num_snapshot'] = int( params['num_snapshot'] )

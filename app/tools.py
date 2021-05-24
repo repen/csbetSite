@@ -1,4 +1,6 @@
 import os, re, hashlib
+from typing import List
+from Interface import IFixture
 
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
@@ -8,7 +10,7 @@ def hash_(string):
     return hashlib.sha1(string.encode()).hexdigest()
 
 
-def get_search(param, objs):
+def get_search(param, objs: List[IFixture]):
     # {'time': '2020-07-21:2020-07-22', 'name_market': '', 't1name': '', 't2name': '', 'sum_t1': '100', 'sum_t2': '100', 'num_snapshot': '5'}
     param_examp = {
         "time" : (0,0),
@@ -29,7 +31,6 @@ def get_search(param, objs):
     # if param['time'][0] and param['time'][1]:
     #     result = l( f ( lambda x : x.m_timestamp > param['time'][0] and x.m_timestamp < param['time'][1], result) )
 
-    # breakpoint()
     if param['t1name']:
         result = l( f( lambda x : param['t1name'] in x.m_team1, result) )
 
@@ -46,7 +47,7 @@ def get_search(param, objs):
             res.markets = list( filter( lambda x: x.name == param["name_market"], res.markets) )
 
     if param['sum_t1']:
-        '''ДОбавить фильтр для всех рынков'''
+        '''Добавить фильтр для всех рынков'''
         if param["name_market"]:
             result = l(f( lambda x: x.markets[0].left_value >= param["sum_t1"] , result) )
         else:
@@ -60,13 +61,18 @@ def get_search(param, objs):
             for res in result:
                 res.markets = l(f( lambda market: market.right_value >= param["sum_t2"], res.markets ))
 
-
-    # =============== deleted defective fixtures
+    # =============== Delete defective fixtures
     index_temp = []
     for e, res in enumerate( result ):
         for ee, market in enumerate( res.markets ):
+
             if market.name == "Main":
                 if not re.search(r"^\d+\s\:\s\d+$", market.score):
+                    index_temp.append( (e, ee) )
+                    break
+
+            if "Победа на карте" in market.name:
+                if not market.score:
                     index_temp.append( (e, ee) )
                     break
 
@@ -86,7 +92,7 @@ def get_search(param, objs):
         new_res.append(res)
 
     result = new_res
-    # =============== deleted defective fixtures
+    # =============== delete defective fixtures
 
     return result
 
