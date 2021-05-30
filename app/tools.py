@@ -1,6 +1,7 @@
 import os, re, hashlib
 from typing import List
-from Interface import IFixture
+from Interface import IFixture, IMarketResult
+from dataclasses import dataclass, field
 
 def listdir_fullpath(d):
     return [os.path.join(d, f) for f in os.listdir(d)]
@@ -10,7 +11,8 @@ def hash_(string):
     return hashlib.sha1(string.encode()).hexdigest()
 
 
-def get_search(param, objs: List[IFixture]):
+def filters(param, objs: List[IFixture]):
+    result = total26FullFixture(objs)
     # {'time': '2020-07-21:2020-07-22', 'name_market': '', 't1name': '', 't2name': '', 'sum_t1': '100', 'sum_t2': '100', 'num_snapshot': '5'}
     param_examp = {
         "time" : (0,0),
@@ -22,7 +24,6 @@ def get_search(param, objs: List[IFixture]):
         "sum_t2" : 0,
     }
 
-    result = objs
     l = list
     f = filter
 
@@ -93,9 +94,52 @@ def get_search(param, objs: List[IFixture]):
 
     result = new_res
     # =============== delete defective fixtures
-
     return result
 
+
+def total26result(fixtures: List[IFixture], db) -> List[IFixture]:
+    for fixture in fixtures:
+        for market in fixture.markets:
+            market.score = db.execute_sql(
+                f"SELECT * FROM result WHERE c_id={fixture.m_id}").fetchall()[0][-1]
+
+    return fixtures
+
+
+class TotalScore:
+    NAME = " Количество раундов 26.5"
+    def __init__(self, name: str, value: str):
+        """ An example
+            after  = [Карта #2] Победа на карте
+            before = [Карта #2] Количество раундов 26.5
+        """
+        self.params = re.split(r"\]", name)
+        self.name: str = "]".join([self.params[0], self.NAME])
+        self.score: str = value
+
+
+    def __eq__(self, other: IMarketResult):
+        return self.name == other.name
+
+def total26FullFixture(fixtures: List[IFixture]) -> List[IFixture]:
+    for fixture in fixtures:
+        score_list: List[TotalScore] = []
+        for market in fixture.markets:
+            if re.search(r"\[.*?\] Победа на карте", market.name):
+                score_list.append(TotalScore(market.name, market.score))
+
+        for market in fixture.markets:
+            if re.search(r"\[.*?\] Количество раундов 26.5", market.name):
+                for score in score_list:
+                    if score == market:
+                        market.score = score.score
+
+    return fixtures
+
+def _finally(fixtures: List[IFixture], market_name):
+    if re.search(r"Количество раундов 26.5", market_name):
+        fixtures = [x for x in fixtures if re.search(r"\:", x.markets[0].score)]
+    return fixtures
 
 def divider(arr):
     '''

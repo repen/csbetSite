@@ -4,10 +4,10 @@ from typing import List
 from Model import Fixture, Market, Result, Koef, db
 from datetime import datetime
 from Globals import PRODUCTION_WORK, DATA_DIR
-from tools import get_search, divider
+from tools import filters, divider, total26result, _finally
 import itertools
 from flask_caching import Cache
-from Interface import IFixture, IMarket, IResult, IMarketResult
+from Interface import IFixture, IMarket, IMarketResult, IParams
 
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -191,48 +191,47 @@ def match_page(m_id):
     })
 
 
+@cache.cached(timeout=60 * 60 * 50, key_prefix='team_list')
+def get_team_list():
+    query1 = db.execute_sql( f"SELECT m_team1, m_team2 FROM fixture" )
+    teams = set()
+    for row in query1.fetchall():
+        teams.add(row[0])
+        teams.add(row[1])
+
+    teams = list(teams)
+    teams.sort()
+    return teams
+
+
+@cache.cached(timeout=60 * 60 * 50, key_prefix='league_list')
+def get_league_list():
+    query2 = db.execute_sql(f"SELECT DISTINCT m_league FROM fixture")
+    leagues = list( set( [x[0] for x in query2.fetchall()] ) )
+    leagues.sort()
+    return leagues
+
+
+@cache.cached(timeout=60 * 60 * 50, key_prefix='market_list')
+def get_market_list():
+    query3 = db.execute_sql(f"SELECT DISTINCT name from market")
+    market_name_list = [ x[0] for x in query3.fetchall()]
+    market_name_list = list( filter( lambda x: not re.search(pattern001, x), market_name_list) )
+    market_name_list = list( filter( lambda x: not re.search("выигра", x), market_name_list) )
+    if market_name_list:
+        market_name_list = list( filter( lambda x: x, market_name_list) )
+        market_name_list.append( "выиграют одну карту" )
+        market_name_list.sort()
+    return market_name_list
+
+
 @app.route('/filter')
 def filter_page():
     data = {}
     data['result'] = []
     params = request.args.to_dict()
-    fixtures = []
-
-    @cache.cached(timeout=60 * 60 * 50, key_prefix='team_list')
-    def get_team_list():
-        query1 = db.execute_sql( f"SELECT m_team1, m_team2 FROM fixture" )
-        teams = set()
-        for row in query1.fetchall():
-            teams.add(row[0])
-            teams.add(row[1])
-
-        teams = list(teams)
-        teams.sort()
-        return teams
-
     data["teams"] = get_team_list()
-
-    @cache.cached(timeout=60 * 60 * 50, key_prefix='league_list')
-    def get_league_list():
-        query2 = db.execute_sql(f"SELECT DISTINCT m_league FROM fixture")
-        leagues = list( set( [x[0] for x in query2.fetchall()] ) )
-        leagues.sort()
-        return leagues
-
     data["league"] = get_league_list()
-
-    @cache.cached(timeout=60 * 60 * 50, key_prefix='market_list')
-    def get_market_list():
-        query3 = db.execute_sql(f"SELECT DISTINCT name from market")
-        market_name_list = [ x[0] for x in query3.fetchall()]
-        market_name_list = list( filter( lambda x: not re.search(pattern001, x), market_name_list) )
-        market_name_list = list( filter( lambda x: not re.search("выигра", x), market_name_list) )
-        if market_name_list:
-            market_name_list = list( filter( lambda x: x, market_name_list) )
-            market_name_list.append( "выиграют одну карту" )
-            market_name_list.sort()
-        return market_name_list
-
     data["name_markets"] = get_market_list()
 
     if params:
@@ -282,7 +281,12 @@ def filter_page():
         params['sum_t1'] = int( params['sum_t1'] )
         params['sum_t2'] = int( params['sum_t2'] )
         params['num_snapshot'] = int( params['num_snapshot'] )
-        query = get_search( params, fixtures )
+        query = filters(params, fixtures)
+
+        if params['name_market'] == "Количество раундов 26.5":
+            query = total26result(query, db)
+
+        query = _finally(query, params["name_market"])
 
         data['result'] = query
         data['params'] = params
