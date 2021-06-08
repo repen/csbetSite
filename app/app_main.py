@@ -154,6 +154,7 @@ def match_page(m_id):
     if query0:
         dfixture = query0.namedtuples()[0]._asdict()
         dfixture.pop("id")
+        dfixture['markets'] = []
         fixture = IFixture(**dfixture).__dict__
 
     
